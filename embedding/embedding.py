@@ -7,12 +7,12 @@ print(gensim.__version__)
 
 class SciCiteEmbedding:
     def __init__(self, glove=False, word2vec=False, elmo=False, bert=False):
-        self.word2vec =word2vec
+        self.word2vec = word2vec
         self.glove = glove
         self.elmo = elmo
         self.bert = bert
         self.ndim = None
-        self.ndim = []
+        self.ndim = 100
 
     def embed(self, X_train):
         embed_list = []
