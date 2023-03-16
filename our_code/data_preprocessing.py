@@ -45,16 +45,21 @@ class Data_Preprocessing:
                 new_doc = new_doc
 
             # remove special character, such as double quotes, punctuation, and possessive pronouns.
-            def remove_unwant(text):
-                text = re.sub(r'https?:\/\/.*[\r\n]*', '', text, flags=re.MULTILINE)
-                text = re.sub(r'\<a href', ' ', text)
-                text = re.sub(r'&amp;', '', text)
-                text = re.sub(r'[_"\-;%()|+&=*%.,!?:#$@\[\]/]', ' ', text)
-                text = re.sub(r'<br />', ' ', text)
-                text = re.sub(r'\'', ' ', text)
+            def delete_citation(text):
+                # delete the citation from the string
+                text = re.sub(r'\([^%]\)', ' ', text)
+                text = re.sub(r'\[.*\]', ' ', text)
+                # regex_find_citation = re.compile(r"\(\s?(([A-Za-z\-]+\s)+([A-Za-z\-]+\.?)?,?\s\d{2,4}[a-c]?(;\s)?)+\s?\)|"
+                #                                  r"\[(\d{1,3},\s?)+\d{1,3}\]|"
+                #                                  r"\[[\d,-]+\]|(\([A-Z][a-z]+, \d+[a-c]?\))|"
+                #                                  r"([A-Z][a-z]+ (et al\.)? \(\d+[a-c]?\))|"
+                #                                  r"[A-Z][a-z]+ and [A-Z][a-z]+ \(\d+[a-c]?\)]")
+                # text = regex_find_citation.sub("", text)
                 return text
-            new_doc = remove_unwant(new_doc)
-            # remove stopwords
+            def delete_space(text):
+                text = re.sub(r'\([^%]\)', ' ', text)
+                return text
+            new_doc = delete_citation(new_doc)
 
             if self.stopword:
                 new_doc = ' '.join([word for word in new_doc.split() if word not in self.stopword_set])
@@ -76,4 +81,6 @@ class Data_Preprocessing:
 
         self.clean_text = new_documents
         return self.clean_text
+
+
 
