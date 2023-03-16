@@ -47,4 +47,4 @@ test = [['ok',',','fine','i','will','check','it','later','.'],
 
 embed_model = SciCiteEmbedding(glove=True)
 embed_list = embed_model.embed(test)
-print(embed_list.shape)
+print(embed_list)
