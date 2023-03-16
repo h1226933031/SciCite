@@ -35,7 +35,6 @@ class SciCiteEmbedding:
 
     def seq_padding(self, X_train): # no need!!!
         embed_list = self.embed(X_train)
-        max_length =
         pass
 
     def save_npy(self, X_train):
@@ -45,3 +44,7 @@ class SciCiteEmbedding:
 test = [['ok',',','fine','i','will','check','it','later','.'],
            ['love','you','!'],
            ['i', 'think','data','preprocessing','is','so','complicated','.']]
+
+embed_model = SciCiteEmbedding(glove=True)
+embed_list = embed_model.embed(test)
+print(embed_list.shape)
