@@ -60,12 +60,13 @@ class SciCiteEmbedding:
 
         elif self.bert:
             pass
-        
+
 
 test = [['ok', ',', 'fine', 'i', 'will', 'check', 'it', 'later', '.'],
         ['love', 'you', '!'],
         ['i', 'think', 'data', 'preprocessing', 'is', 'so', 'complicated', '.']]
+
 embed_model = SciCiteEmbedding(elmo=True)  # pick an embedding method
 embed_array = embed_model.embed(test)
-np.save(embed_array, '../data/a_simple_test.npy')
+np.save('../data/a_simple_test.npy', embed_array)
 print(embed_array.shape)
