@@ -60,7 +60,7 @@ class SciCiteEmbedding:
 
         elif self.bert:
             pass
-
+        
 
 test = [['ok', ',', 'fine', 'i', 'will', 'check', 'it', 'later', '.'],
         ['love', 'you', '!'],
