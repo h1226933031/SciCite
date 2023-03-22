@@ -19,7 +19,7 @@ import contractions
 from word2number import w2n
 import time
 
-class Data_Preprocessing:
+class DataPreprocessing:
     def __init__(self, contract=False, lemmatize=False, lowercase=False, stopword=False, stopword_set=None):
 
         self.contract = contract
