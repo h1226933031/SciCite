@@ -1,0 +1,105 @@
+import json
+import pandas as pd
+import nltk
+import re
+import contractions
+from tqdm import tqdm
+from torchtext.legacy.data import Field, LabelField, Example, Dataset
+from torchtext.legacy.data import Iterator, BucketIterator
+
+
+# construct a simple tokenizer for later use(TEXT.build_vocab())
+def tokenizer(text, contract=True, lowercase=True, stopword=False, stopword_set=None):
+    # lower case (this can be control by the augment lowcase)
+    if lowercase:
+        new_text = text.lower()
+    else:
+        new_text = text
+
+    # contraction
+    new_text = contractions.fix(new_text) if contract else new_text
+
+    # remove special character, such as double quotes, punctuation, and possessive pronouns.
+    def delete_citation(string):
+        # delete the citation from the string
+        string = re.sub(r'\([^%]\)', ' ', string)
+        string = re.sub(r'\[.*\]', ' ', string)
+        return string
+
+    new_text = delete_citation(new_text)
+
+    if stopword and stopword_set:
+        new_text = ' '.join([word for word in new_text.split() if word not in stopword_set])
+
+    # Tokenize the sentence
+    new_text = nltk.WordPunctTokenizer().tokenize(new_text)
+    return new_text
+
+
+# get_dataset(): Dataset所需的examples和fields
+def get_dataset(csv_data, text_field, label_field, test=False):
+    fields = [("string", text_field), ("label", label_field)]
+    examples = []
+
+    if test:
+        # testset: not need to load labels
+        for text in tqdm(csv_data['string']):
+            examples.append(Example.fromlist([text, None], fields))
+    else:
+        for text, label in tqdm(zip(csv_data['string'], csv_data['label'])):
+            examples.append(Example.fromlist([text, label], fields))
+    return examples, fields
+
+
+# return batch iterators for training
+def get_iters(batch_size=128):
+    with open('./data/train.jsonl', encoding='utf-8') as f:
+        train_data = pd.json_normalize([json.loads(line) for line in f])[['string', 'label']]
+    with open('./data/dev.jsonl', encoding='utf-8') as f:
+        valid_data = pd.json_normalize([json.loads(line) for line in f])[['string', 'label']]
+    with open('./data/test.jsonl', encoding='utf-8') as f:
+        test_data = pd.json_normalize([json.loads(line) for line in f])[['string', 'label']]
+
+    # construct Fields
+    tokenize = tokenizer
+    TEXT = Field(sequential=True, tokenize=tokenize, batch_first=True)
+    LABEL = LabelField()
+
+    train_examples, train_fields = get_dataset(train_data, TEXT, LABEL)
+    valid_examples, valid_fields = get_dataset(valid_data, TEXT, LABEL)
+    test_examples, test_fields = get_dataset(test_data, TEXT, None, test=True)
+
+    train = Dataset(train_examples, train_fields)
+    valid = Dataset(valid_examples, valid_fields)
+    test = Dataset(test_examples, test_fields)
+
+    # print(train[0].string)  # ['However,', 'how', 'frataxin', 'interacts', 'with', 'the', 'Fe-S']
+    TEXT.build_vocab(train, vectors="glove.6B.100d")  # 开始embedding
+    LABEL.build_vocab(train)
+    print('LABEL.vocab.stoi:', LABEL.vocab.stoi)  # defaultdict(None, {'background': 0, 'method': 1, 'result': 2})
+    # print vocab information
+    print('len(TEXT.vocab)', len(TEXT.vocab))
+    print('TEXT.vocab.vectors.size()', TEXT.vocab.vectors.size())
+
+    # construct iterators
+    train_iter, val_iter = BucketIterator.splits(
+        (train, valid),
+        batch_sizes=(batch_size, batch_size),
+        device=-1,  # device=-1 if not using gpu
+        sort_key=lambda x: len(x.string),  # the BucketIterator needs to be told what function it should use to
+        # group the data.
+        sort_within_batch=False,
+        repeat=False  # we pass repeat=False because we want to wrap this Iterator layer.
+    )
+    test_iter = Iterator(test, batch_size=batch_size, device=-1, sort=False, sort_within_batch=False, repeat=False)
+
+    # for idx, batch in enumerate(train_iter): # output batch shapes
+    #     print(idx, batch)
+    #     text, label = batch.string, batch.label
+    #     print(text.shape, label.shape)
+    #     if idx == 3:
+    #         break
+    return train_iter, val_iter, test_iter, TEXT, LABEL
+
+# to load batches before training, use this:
+# train_iter, val_iter, test_iter, TEXT, LABEL = get_iters(batch_size=128)
