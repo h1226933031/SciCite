@@ -77,7 +77,7 @@ class DataPreprocessing:
             if self.lemmatize:
                 lemma = nltk.stem.WordNetLemmatizer()
                 new_doc = list(map(lambda word_tag: lemma.lemmatize(word=word_tag[0], pos=tag_map[word_tag[1][0]]), nltk.pos_tag(new_doc)))
-            new_documents.append(new_doc)
+            new_documents.append(" ".join(new_doc))
 
         self.clean_text = new_documents
         return self.clean_text
