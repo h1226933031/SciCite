@@ -160,12 +160,14 @@ if __name__ == "__main__":
 
     # Load and preprocess data
     df = DataReader("../data/train.jsonl").read()
+    df_test = DataReader("../data/test.jsonl").read()
     dp = DataPreprocessing(contract=True, lemmatize=False, lowercase=True, stopword=False, stopword_set=None)
     df['string'] = pd.DataFrame(dp.preprocessing(list(df['string'])))
+    df_test['string'] = pd.DataFrame(dp.preprocessing(list(df_test['string'])))
 
     #
-    df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42),
-                                         [int(.8*len(df)), int(.9*len(df))])
+    df_train, df_val = np.split(df.sample(frac=1, random_state=42),
+                                         [int(.9*len(df))])
 
     print(len(df_train),len(df_val), len(df_test))
 
