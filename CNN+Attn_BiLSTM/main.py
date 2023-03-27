@@ -4,20 +4,21 @@ from utils.data_loader import get_iters
 import torch.optim as optim
 import time
 from utils.utils import train, evaluate, epoch_time
-from models import CNN, BiLSTM_Attention, BERT
+from models import CNN, BiLSTM_Attention, BERT, RNN
 
 # load batches first
-BATCH_SIZE = 128
+BATCH_SIZE = 256
 train_iter, val_iter, test_iter, TEXT, LABEL = get_iters(batch_size=BATCH_SIZE)
 INPUT_DIM = len(TEXT.vocab)
 EMBEDDING_DIM = 100
 
 # set model type
-MODEL_NAME = 'Attn_BiLSTM'  # choose from ['CNN', 'Attn_BiLSTM', 'BERT']
+MODEL_NAME = 'RNN'  # choose from ['CNN', 'Attn_BiLSTM', 'BERT']
 
 # set model configs
 if MODEL_NAME == 'BERT':
-    pass
+    model = BERT.Model()
+
 elif MODEL_NAME == 'CNN':
     # CNN hyper parameters
     N_FILTERS = 100
@@ -32,21 +33,28 @@ elif MODEL_NAME == 'Attn_BiLSTM':
     NUM_CLASSES = 3
     model = BiLSTM_Attention.Model(INPUT_DIM, EMBEDDING_DIM, N_HIDDEN, NUM_CLASSES)
 
+elif MODEL_NAME == 'RNN':
+    DROPOUT = 0.1
+    N_HIDDEN = 32
+    NUM_CLASSES = 3
+    model = RNN.Model(DROPOUT, INPUT_DIM, EMBEDDING_DIM, N_HIDDEN, NUM_CLASSES)
+
 else:
     print(f'model type {MODEL_NAME} is currently not supported.')
     exit()
 
 # load pre-trained embeddings
-pretrained_embeddings = TEXT.vocab.vectors
-model.embedding.weight.data.copy_(pretrained_embeddings)
+if MODEL_NAME not in ['BERT']:
+    pretrained_embeddings = TEXT.vocab.vectors
+    model.embedding.weight.data.copy_(pretrained_embeddings)
 
-# Then zero the initial weights of the unknown and padding tokens.
-UNK_IDX = TEXT.vocab.stoi[TEXT.unk_token]
-model.embedding.weight.data[UNK_IDX] = torch.zeros(EMBEDDING_DIM)
-# model.embedding.weight.data[PAD_IDX] = torch.zeros(EMBEDDING_DIM)
+    # Then zero the initial weights of the unknown and padding tokens.
+    UNK_IDX = TEXT.vocab.stoi[TEXT.unk_token]
+    model.embedding.weight.data[UNK_IDX] = torch.zeros(EMBEDDING_DIM)
+    # model.embedding.weight.data[PAD_IDX] = torch.zeros(EMBEDDING_DIM)
 
 # set training configs
-N_EPOCHS = 5
+N_EPOCHS = 1
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 criterion = nn.CrossEntropyLoss().to(device)
