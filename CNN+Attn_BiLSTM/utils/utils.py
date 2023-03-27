@@ -1,5 +1,6 @@
 import torch
-
+from sklearn.metrics import classification_report
+import numpy as np
 
 def categorical_accuracy(preds, y):
     """
@@ -18,6 +19,7 @@ def evaluate(model, iterator, criterion, model_name):
     model.eval()
 
     with torch.no_grad():
+        y_hat, y_label = np.empty(0, dtype=int), np.empty(0, dtype=int)
         for batch in iterator:
             if model_name == 'Attn_BiLSTM':
                 predictions = model(batch.string)[0]
@@ -25,11 +27,16 @@ def evaluate(model, iterator, criterion, model_name):
                 predictions = model(batch.string)
 
             loss = criterion(predictions, batch.label)
-
             acc = categorical_accuracy(predictions, batch.label)
 
             epoch_loss += loss.item()
             epoch_acc += acc.item()
+
+            y_hat = np.concatenate((y_hat, predictions.argmax(1).numpy()), axis=0)
+            y_label = np.concatenate((y_label, batch.label.numpy()), axis=0)
+
+        # print classification report, including F1-score
+        print(classification_report(y_label, y_hat, target_names=['background', 'method', 'result']))
 
     return epoch_loss / len(iterator), epoch_acc / len(iterator)
 
