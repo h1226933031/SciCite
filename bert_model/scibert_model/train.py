@@ -40,7 +40,7 @@ SCICITE_DEV_PATH = './scicite/dev.jsonl'
 
 train_data, test_data, dev_data = load_data(SCICITE_TRAIN_PATH), load_data(SCICITE_TEST_PATH), load_data(SCICITE_DEV_PATH)
 
-train_data, test_data, dev_data = train_data[:40], test_data[:40], dev_data[:40]
+# train_data, test_data, dev_data = train_data[:40], test_data[:40], dev_data[:40]
 bz = 300
 # bertmodel_name = 'bert-large-uncased'
 # bertmodel_name = 'allenai/scibert_scivocab_uncased'
