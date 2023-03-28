@@ -56,15 +56,15 @@ else:
 
 repeat = [1, 1, 1]
 
-train = bert_process(train_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=0.01)
+train = bert_process(train_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=0.2)
 # train = bert_process(train_data, train_data_sci ,batch_size=bz, pretrained_model_name=bertmodel_name, repeat=repeat)
 train_loader = train.data_loader
 print(len(train.data))
 
-dev = bert_process(dev_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=0.01)
+dev = bert_process(dev_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=0.2)
 dev_loader = dev.data_loader
 
-test = bert_process(test_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=0.01)
+test = bert_process(test_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=0.2)
 test_loader = test.data_loader
 
 num_of_output = 3
@@ -82,7 +82,7 @@ loss_fn = nn.NLLLoss()
 optimizer = torch.optim.Adam(network.parameters(), weight_decay = 1e-5, lr=0.001)
 # optimizer = torch.optim.Adam(network.parameters(), lr=0.01)
 
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience = 2, factor = 0.5, verbose = True)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience = 10, factor = 0.5, verbose = True)
 n_epochs = 5
 class_factor = 1.5
 sum_factor = 0.8
@@ -98,10 +98,10 @@ pytorch_total_params = sum(p.numel() for p in network.parameters() if p.requires
 print("Trainable parameters " ,pytorch_total_params)
 
 def evaluate_model(network, data, data_object):
-    batch_size = 0
+    # batch_size = 0
     f1s = []
     losses = []
-    accus = []
+    # accus = []
 
     c = {str(i): 0 for i in range(3)}
     p = {str(i): 0 for i in range(3)}

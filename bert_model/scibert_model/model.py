@@ -20,6 +20,7 @@ class CustomBertClassifier(nn.Module):
         # self.bert_model = model
         self.relu = nn.ReLU()
         self.logsoftmax = nn.LogSoftmax(dim=1)
+        self.softmax = nn.Softmax(dim=1)
         self.model = AutoModel.from_pretrained(model_name)
         for name, param in self.model.named_parameters():
             if 'classifier' not in name: # classifier layer
@@ -74,5 +75,6 @@ class CustomBertClassifier(nn.Module):
         x3 = self.relu(self.linear3(x2))
         # x4 = self.linear3(x3)
         x5 = self.logsoftmax(x3)
+        # x5 = self.softmax(x3)
         # print(torch.exp(x5))
         return x5

@@ -179,9 +179,13 @@ class bert_process:
         raw_x = []
         for i, exa in enumerate(self.data):
             text, section_name = re.sub("@@CITATION", "@CITATION@", exa['cleaned_cite_text']), exa['section_name']
+            if text is None:
+                text = ' '
+            # if section_name is None:
+            #     section_name = ' '
             raw_x.append('sentence : {} [SEP] section name : {}'.format(text, section_name))
 
-        encoded_x = self.tokenizer(raw_x, padding=self.padding, max_length=self.max_len, return_tensors='pt') # dict
+        encoded_x = self.tokenizer(raw_x, padding=self.padding, max_length=self.max_len, return_tensors='pt', truncation=True) # dict
         self.indexed_input, self.mask, self.token_type_ids  = encoded_x['input_ids'], encoded_x['attention_mask'], encoded_x['token_type_ids']
 
         self.cite_pos = []
