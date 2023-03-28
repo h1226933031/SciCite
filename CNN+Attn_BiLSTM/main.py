@@ -3,7 +3,7 @@ import torch.nn as nn
 from utils.data_loader import get_iters
 import torch.optim as optim
 import time
-from utils.utils import train, evaluate, epoch_time
+from utils.utils import train, evaluate, epoch_time, adjust_learning_rate
 from models import CNN, BiLSTM_Attention, BERT, RNN
 import matplotlib.pyplot as plt
 from scibert_model import data_preprocessing
@@ -113,7 +113,8 @@ class Model(nn.Module):
             if valid_loss < best_valid_loss:
                 patient_count = 0
                 best_valid_loss = valid_loss
-                torch.save(self.model.state_dict(), f'./ckpt/{self.PATH}-model.pt')
+                if args.SAVE_BEST_MODEL:
+                    torch.save(self.model.state_dict(), f'./ckpt/{self.PATH}-model.pt')
             else:
                 patient_count += 1
 
@@ -123,6 +124,9 @@ class Model(nn.Module):
             # apply early stopping
             if patient_count > patient and early_stopping:
                 break
+            # apply learning rate decay
+            if args.lradj:
+                adjust_learning_rate(optimizer, epoch + 1, args)
     def test(self): # this is to test the model on the testing dataset
         best_model = torch.load(f'./ckpt/{self.PATH}-model.pt').get('model_state_dict').cuda()
         test_loss, test_acc = evaluate(best_model, self.test_iter, self.criterion, self.MODEL_NAME)
@@ -170,6 +174,7 @@ if __name__ == '__main__':
     parser.add_argument('--INITIAL_LR', type=float, default=0.0001)
     parser.add_argument('--EARLY_STOPPING', type=bool, default=True)
     parser.add_argument('--SAVE_BEST_MODEL', type=bool, default=True)
+    parser.add_argument('--lradj', type=str, default=None, help="options: [None, 'type1', 'type2', 'type3', 'type4']")
 
     args = parser.parse_args()
     print('Args in experiment:')
