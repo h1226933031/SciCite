@@ -151,7 +151,7 @@ class Model(nn.Module):
         loss = self.loss_fc(y_pred, y)
         prediction = torch.argmax(y_pred, dim=1)
         correct = (prediction == y).sum().item()
-        numb = len(X)  # 此处的8代表batch_size
+        numb = len(X)  #
         accuracy = (correct/numb)*100
         print(f"The accuracy on the testing dataset is {accuracy} and the loss is {loss.item()}")
 
