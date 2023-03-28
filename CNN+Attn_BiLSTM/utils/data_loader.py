@@ -1,54 +1,7 @@
 from utils.data_preprocessing import DataPreprocessing, DataReader
-import nltk
-import re
-import contractions
-from tqdm import tqdm
 from torchtext.legacy.data import Field, LabelField, Example, Dataset
 from torchtext.legacy.data import Iterator, BucketIterator
 import pandas as pd
-
-# construct a simple tokenizer for later use(TEXT.build_vocab())
-def tokenizer(text, contract=True, lowercase=True, stopword=False, stopword_set=None):
-    # lower case (this can be control by the augment lowcase)
-    if lowercase:
-        new_text = text.lower()
-    else:
-        new_text = text
-
-    # contraction
-    new_text = contractions.fix(new_text) if contract else new_text
-
-    # remove special character, such as double quotes, punctuation, and possessive pronouns.
-    def delete_citation(string):
-        # delete the citation from the string
-        string = re.sub(r'\([^%]\)', ' ', string)
-        string = re.sub(r'\[.*\]', ' ', string)
-        return string
-
-    new_text = delete_citation(new_text)
-
-    if stopword and stopword_set:
-        new_text = ' '.join([word for word in new_text.split() if word not in stopword_set])
-
-    # Tokenize the sentence
-    new_text = nltk.WordPunctTokenizer().tokenize(new_text)
-    return new_text
-
-
-# get_dataset(): Dataset所需的examples和fields
-def get_dataset(csv_data, text_field, label_field, test=False):
-    fields = [("string", text_field), ("label", label_field)]
-    examples = []
-
-    if test:
-        # testset: not need to load labels
-        for text in tqdm(csv_data['string']):
-            examples.append(Example.fromlist([text, None], fields))
-    else:
-        for text, label in tqdm(zip(csv_data['string'], csv_data['label'])):
-            examples.append(Example.fromlist([text, label], fields))
-    return examples, fields
-
 
 # return batch iterators for training
 def get_iters(batch_size, use_bert=False, use_balance_data=True, train_data_path="./scicite-data/train.jsonl", valid_data_path="./scicite-data/dev.jsonl", test_data_path="./scicite-data/test.jsonl"):
