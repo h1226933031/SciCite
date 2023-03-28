@@ -5,6 +5,7 @@ import contractions
 from tqdm import tqdm
 from torchtext.legacy.data import Field, LabelField, Example, Dataset
 from torchtext.legacy.data import Iterator, BucketIterator
+import pandas as pd
 
 # construct a simple tokenizer for later use(TEXT.build_vocab())
 def tokenizer(text, contract=True, lowercase=True, stopword=False, stopword_set=None):
@@ -50,15 +51,18 @@ def get_dataset(csv_data, text_field, label_field, test=False):
 
 
 # return batch iterators for training
-def get_iters(batch_size, use_bert=False):
+def get_iters(batch_size, use_bert=False, use_balance_data=True, train_data_path="./scicite-data/train.jsonl", valid_data_path="./scicite-data/dev.jsonl", test_data_path="./scicite-data/test.jsonl"):
     dp = DataPreprocessing(contract=True, lemmatize=False, lowercase=True, stopword=False, stopword_set=None)
-    train_data = DataReader("./scicite-data/train.jsonl").read()
-    train_data['string'] = dp.preprocessing(list(train_data['string']))
-
-    valid_data = DataReader("./scicite-data/dev.jsonl").read()
+    train_data = DataReader(train_data_path).read()
+    if use_balance_data:
+        train_data = pd.read_csv("./scicite-data/train_balanced.csv")
+        train_data.drop_duplicates(['string'])
+    else:
+        train_data = DataReader(train_data_path).read()
+    valid_data = DataReader(valid_data_path).read()
     valid_data['string'] = dp.preprocessing(list(valid_data['string']))
 
-    test_data = DataReader("./scicite-data/test.jsonl").read()
+    test_data = DataReader(test_data_path).read()
     test_data['string'] = dp.preprocessing(list(test_data['string']))
 
     # construct Fields
@@ -105,3 +109,4 @@ def get_iters(batch_size, use_bert=False):
     #     if idx == 2:
     #         break
     return train_iter, val_iter, test_iter, TEXT, LABEL
+

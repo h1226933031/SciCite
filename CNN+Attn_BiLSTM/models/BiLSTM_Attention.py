@@ -7,7 +7,7 @@ class Model(nn.Module):
     def __init__(self, vocab_size, embedding_dim, n_hidden, num_classes):
         super(Model, self).__init__()
         self.embedding = nn.Embedding(vocab_size, embedding_dim)
-        self.lstm = nn.LSTM(embedding_dim, n_hidden, bidirectional=True)
+        self.lstm = nn.LSTM(embedding_dim, n_hidden, bidirectional=True, batch_first=True)
         self.out = nn.Linear(n_hidden * 2, num_classes)
 
     def attention_net(self, lstm_output, final_state):
@@ -33,12 +33,10 @@ class Model(nn.Module):
         :return:
         '''
         input = self.embedding(X)  # input : [batch_size, seq_len, embedding_dim]
-        input = input.transpose(0, 1)  # input : [seq_len, batch_size, embedding_dim]
 
         # final_hidden_state, final_cell_state : [num_layers(=1) * num_directions(=2), batch_size, n_hidden]
-        # output : [seq_len, batch_size, n_hidden * num_directions(=2)]
+        # output : [batch_size, seq_len, n_hidden * num_directions(=2)]
         output, (final_hidden_state, final_cell_state) = self.lstm(input)
-        output = output.transpose(0, 1)  # output : [batch_size, seq_len, n_hidden * num_directions(=2)]
 
         attn_output, attention = self.attention_net(output, final_hidden_state)
         return self.out(
