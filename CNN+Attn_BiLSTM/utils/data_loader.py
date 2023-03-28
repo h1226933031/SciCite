@@ -53,7 +53,6 @@ def get_dataset(csv_data, text_field, label_field, test=False):
 # return batch iterators for training
 def get_iters(batch_size, use_bert=False, use_balance_data=True, train_data_path="./scicite-data/train.jsonl", valid_data_path="./scicite-data/dev.jsonl", test_data_path="./scicite-data/test.jsonl"):
     dp = DataPreprocessing(contract=True, lemmatize=False, lowercase=True, stopword=False, stopword_set=None)
-    train_data = DataReader(train_data_path).read()
     if use_balance_data:
         train_data = pd.read_csv("./scicite-data/train_balanced.csv")
         train_data.drop_duplicates(['string'])
