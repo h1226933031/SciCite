@@ -34,9 +34,9 @@ def load_data(path):
     return data
 
 
-SCICITE_TRAIN_PATH = './scicite/train.jsonl'
-SCICITE_TEST_PATH = './scicite/test.jsonl'
-SCICITE_DEV_PATH = './scicite/dev.jsonl'
+SCICITE_TRAIN_PATH = './scicite-data/train.jsonl'
+SCICITE_TEST_PATH = './scicite-data/test.jsonl'
+SCICITE_DEV_PATH = './scicite-data/dev.jsonl'
 
 train_data, test_data, dev_data = load_data(SCICITE_TRAIN_PATH), load_data(SCICITE_TEST_PATH), load_data(SCICITE_DEV_PATH)
 

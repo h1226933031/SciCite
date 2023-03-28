@@ -10,6 +10,10 @@ import matplotlib.pyplot as plt
 from collections import defaultdict, Counter, OrderedDict
 import torch.nn.functional as F
 import math
+# 在 python 脚本中的 GPU 指定方式
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+
 
 # checking devices
 device = None
@@ -34,17 +38,17 @@ def load_data(path):
     return data
 
 
-SCICITE_TRAIN_PATH = './scicite/train.jsonl'
-SCICITE_TEST_PATH = './scicite/test.jsonl'
-SCICITE_DEV_PATH = './scicite/dev.jsonl'
+SCICITE_TRAIN_PATH = '../../CNN+Attn_BiLSTM/scicite-data/train.jsonl'
+SCICITE_TEST_PATH = '../../CNN+Attn_BiLSTM/scicite-data/test.jsonl'
+SCICITE_DEV_PATH = '../../CNN+Attn_BiLSTM/scicite-data/dev.jsonl'
 
 train_data, test_data, dev_data = load_data(SCICITE_TRAIN_PATH), load_data(SCICITE_TEST_PATH), load_data(SCICITE_DEV_PATH)
 
 # train_data, test_data, dev_data = train_data[:40], test_data[:40], dev_data[:40]
 bz = 300
 # bertmodel_name = 'bert-large-uncased'
-# bertmodel_name = 'allenai/scibert_scivocab_uncased'
-bertmodel_name = 'bert-base-uncased'
+bertmodel_name = 'allenai/scibert_scivocab_uncased'
+#bertmodel_name = 'bert-base-uncased'
 
 if bertmodel_name == 'bert-base-uncased':
     bert_dim_size = 768
@@ -56,15 +60,16 @@ else:
 
 repeat = [1, 1, 1]
 
-train = bert_process(train_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=0.2)
+
+train = bert_process(train_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=1)
 # train = bert_process(train_data, train_data_sci ,batch_size=bz, pretrained_model_name=bertmodel_name, repeat=repeat)
 train_loader = train.data_loader
 print(len(train.data))
 
-dev = bert_process(dev_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=0.2)
+dev = bert_process(dev_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=1)
 dev_loader = dev.data_loader
 
-test = bert_process(test_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=0.2)
+test = bert_process(test_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=1)
 test_loader = test.data_loader
 
 num_of_output = 3

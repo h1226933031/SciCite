@@ -10,15 +10,15 @@ from scibert_model import data_preprocessing
 import argparse
 import warnings
 import numpy as np
+import json
 
 warnings.filterwarnings("ignore")
 
 
 class Model(nn.Module):
 
-    def __init__(self, MODEL_NAME='RNN', BATCH_SIZE=256, PATH='rnn_batch_', lr=0.001, embedding_layer=100):
+    def __init__(self, MODEL_NAME='RNN', BATCH_SIZE=256, PATH='rnn_batch_', lr=0.001, embedding_layer=100, train_data_path="./scicite-data/train.jsonl", valid_data_path="./scicite-data/dev.jsonl", test_data_path="./scicite-data/test.jsonl"):
         self.BATCH_SIZE = 256
-        self.train_iter, self.val_iter, self.test_iter, self.TEXT, self.LABEL = get_iters(batch_size=BATCH_SIZE)
         self.INPUT_DIM = len(self.TEXT.vocab)
         self.EMBEDDING_DIM = embedding_layer
         self.MODEL_NAME = MODEL_NAME
@@ -38,7 +38,30 @@ class Model(nn.Module):
             self.bert_dim_size = 768
         else:
             self.bert_dim_size = 1024
+        # ----- load training testing valid dataset -----#
+        if MODEL_NAME == 'BERT':
+            def load_data(path):
+                data = []
+                for x in open(path, encoding='utf-8'):
+                    data.append(json.loads(x))
+                return data
+            train_data, test_data, dev_data = load_data(train_data_path), load_data(test_data_path), load_data(valid_data_path)
+            train = data_preprocessing.bert_process(train_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=0.01)
+            # train = bert_process(train_data, train_data_sci ,batch_size=bz, pretrained_model_name=bertmodel_name, repeat=repeat)
+            train_loader = train.data_loader
+            print(len(train.data))
+
+            dev = data_preprocessing.bert_process(dev_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=0.01)
+            dev_loader = dev.data_loader
+
+            test = data_preprocessing.bert_process(test_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=0.01)
+            test_loader = test.data_loader
+
+        else:
+            self.train_iter, self.val_iter, self.test_iter, self.TEXT, self.LABEL = get_iters(batch_size=BATCH_SIZE, train_data_path=train_data_path, test_data_path=test_data_path, valid_data_path=valid_data_path)
+
         # ----- choose the target model ----- #
+
         if MODEL_NAME == 'BERT':
             self.model = BERT.Model()
 
@@ -128,7 +151,7 @@ class Model(nn.Module):
                 break
             # apply learning rate decay
             if lradj:
-                adjust_learning_rate(optimizer, epoch + 1, args)
+                adjust_learning_rate(self.optimizer, epoch + 1, args)
 
     def test(self):  # this is to test the model on the testing dataset
         best_model = torch.load(f'./ckpt/{self.PATH}-model.pt').get('model_state_dict').cuda()
