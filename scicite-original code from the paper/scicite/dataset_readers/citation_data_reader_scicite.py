@@ -13,7 +13,8 @@ from allennlp.common.file_utils import cached_path
 from allennlp.data.dataset_readers.dataset_reader import DatasetReader
 from allennlp.data.fields import LabelField, TextField, MultiLabelField, ListField, ArrayField, MetadataField
 from allennlp.data.instance import Instance
-from allennlp.data.tokenizers import Tokenizer, WordTokenizer
+from allennlp.data.tokenizers import Tokenizer
+# from allennlp.data.tokenizers import Tokenizer, WordTokenizer
 from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer, ELMoTokenCharactersIndexer
 
 from scicite.resources.lexicons import ALL_ACTION_LEXICONS, ALL_CONCEPT_LEXICONS
