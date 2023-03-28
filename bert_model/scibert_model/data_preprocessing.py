@@ -34,8 +34,12 @@ class bert_process:
         # self.tokenizer = AutoTokenizer.from_pretrained('allenai/scibert_scivocab_uncased')
         # print(self.tokenizer(['[SEP]']))
         self.tokenizer = BertTokenizer.from_pretrained(pretrained_model_name)
-        self.citation_id = torch.tensor(8891) # id for citation
-        self.sep_id = torch.tensor(103) # id for [SEP]
+        if pretrained_model_name == 'allenai/scibert_scivocab_uncased':
+            self.citation_id = torch.tensor(8891) # id for citation
+            self.sep_id = torch.tensor(103) # id for [SEP] in scibert
+        else:
+            self.citation_id = torch.tensor(11091)  # id for citation
+            self.sep_id = torch.tensor(102)  # id for [SEP] in base-bert
         self.cite_pos = [] #citation pisition
 
         self.batch_size = batch_size
@@ -172,7 +176,6 @@ class bert_process:
 
 
     def index_input(self):
-        
         raw_x = []
         for i, exa in enumerate(self.data):
             text, section_name = re.sub("@@CITATION", "@CITATION@", exa['cleaned_cite_text']), exa['section_name']
@@ -183,7 +186,7 @@ class bert_process:
 
         self.cite_pos = []
         for i, x_i in enumerate(self.indexed_input):
-            for j,ele in enumerate(x_i):
+            for j, ele in enumerate(x_i):
                 if ele == self.citation_id:
                     self.cite_pos.append(j)
                 if ele == self.sep_id:

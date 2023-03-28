@@ -43,8 +43,8 @@ train_data, test_data, dev_data = load_data(SCICITE_TRAIN_PATH), load_data(SCICI
 # train_data, test_data, dev_data = train_data[:40], test_data[:40], dev_data[:40]
 bz = 300
 # bertmodel_name = 'bert-large-uncased'
-bertmodel_name = 'allenai/scibert_scivocab_uncased'
-# bertmodel_name = 'bert-base-uncased'
+# bertmodel_name = 'allenai/scibert_scivocab_uncased'
+bertmodel_name = 'bert-base-uncased'
 
 if bertmodel_name == 'bert-base-uncased':
     bert_dim_size = 768
@@ -56,15 +56,15 @@ else:
 
 repeat = [1, 1, 1]
 
-train = bert_process(train_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0)
+train = bert_process(train_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=0.01)
 # train = bert_process(train_data, train_data_sci ,batch_size=bz, pretrained_model_name=bertmodel_name, repeat=repeat)
 train_loader = train.data_loader
 print(len(train.data))
 
-dev = bert_process(dev_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0)
+dev = bert_process(dev_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=0.01)
 dev_loader = dev.data_loader
 
-test = bert_process(test_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0)
+test = bert_process(test_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=0.01)
 test_loader = test.data_loader
 
 num_of_output = 3
@@ -83,7 +83,7 @@ optimizer = torch.optim.Adam(network.parameters(), weight_decay = 1e-5, lr=0.001
 # optimizer = torch.optim.Adam(network.parameters(), lr=0.01)
 
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience = 2, factor = 0.5, verbose = True)
-n_epochs = 40
+n_epochs = 5
 class_factor = 1.5
 sum_factor = 0.8
 normalizing_factor = 0.5
@@ -96,6 +96,7 @@ pytorch_total_params = sum(p.numel() for p in network.parameters())
 print("all number of params ", pytorch_total_params)
 pytorch_total_params = sum(p.numel() for p in network.parameters() if p.requires_grad)
 print("Trainable parameters " ,pytorch_total_params)
+
 def evaluate_model(network, data, data_object):
     batch_size = 0
     f1s = []
