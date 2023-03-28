@@ -13,6 +13,7 @@ import numpy as np
 
 warnings.filterwarnings("ignore")
 
+
 class Model(nn.Module):
 
     def __init__(self, MODEL_NAME='RNN', BATCH_SIZE=256, PATH='rnn_batch_', lr=0.001, embedding_layer=100):
@@ -48,12 +49,13 @@ class Model(nn.Module):
             OUTPUT_DIM = len(self.LABEL.vocab)
             DROPOUT = 0.5
             # PAD_IDX = TEXT.vocab.stoi[TEXT.pad_token]
-            self.model = CNN.Model(self.INPUT_DIM, self.EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, OUTPUT_DIM, DROPOUT, pad_idx=None)
+            self.model = CNN.Model(self.INPUT_DIM, self.EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, OUTPUT_DIM, DROPOUT,
+                                   pad_idx=None)
 
         elif MODEL_NAME == 'Attn_BiLSTM':
             N_HIDDEN = 5  # number of hidden units in one cell
             NUM_CLASSES = 3
-            self.model = BiLSTM_Attention.Model(self.INPUT_DIM,self.EMBEDDING_DIM, N_HIDDEN, NUM_CLASSES)
+            self.model = BiLSTM_Attention.Model(self.INPUT_DIM, self.EMBEDDING_DIM, N_HIDDEN, NUM_CLASSES)
 
         elif MODEL_NAME == 'RNN':
             DROPOUT = 0.1
@@ -92,7 +94,7 @@ class Model(nn.Module):
         self.criterion = nn.CrossEntropyLoss().to(self.device)
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
 
-    def train(self, patient=5, N_EPOCHS=100, early_stopping=True, save_best_model=True):
+    def train(self, patient=5, N_EPOCHS=100, early_stopping=True, save_best_model=True, lradj=None):
         patient_count = 0
         best_valid_loss = np.inf
         for epoch in range(N_EPOCHS):
@@ -113,7 +115,7 @@ class Model(nn.Module):
             if valid_loss < best_valid_loss:
                 patient_count = 0
                 best_valid_loss = valid_loss
-                if args.SAVE_BEST_MODEL:
+                if save_best_model:
                     torch.save(self.model.state_dict(), f'./ckpt/{self.PATH}-model.pt')
             else:
                 patient_count += 1
@@ -125,14 +127,15 @@ class Model(nn.Module):
             if patient_count > patient and early_stopping:
                 break
             # apply learning rate decay
-            if args.lradj:
+            if lradj:
                 adjust_learning_rate(optimizer, epoch + 1, args)
-    def test(self): # this is to test the model on the testing dataset
+
+    def test(self):  # this is to test the model on the testing dataset
         best_model = torch.load(f'./ckpt/{self.PATH}-model.pt').get('model_state_dict').cuda()
         test_loss, test_acc = evaluate(best_model, self.test_iter, self.criterion, self.MODEL_NAME)
         print(f"The accuracy on the testing dataset is {test_acc} and the loss is {test_loss}")
 
-    def plot(self): # plot the model performance
+    def plot(self):  # plot the model performance
         fig, ax = plt.subplots()
         ax.plot(range(len(self.total_train_loss)), self.total_train_loss, label='training loss')
         ax.plot(range(len(self.total_valid_loss)), self.total_valid_loss, label='validation loss')
@@ -152,16 +155,11 @@ class Model(nn.Module):
         plt.savefig(f'./fig/{self.PATH}-accuracy.png')
 
 
-
-
-
-
-
 # training
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Experiments for Citation Text Multi-classification')
 
-        # set experimental configs
+    # set experimental configs
     parser.add_argument('--MODEL_NAME', type=str, default='Attn_BiLSTM',
                         help="model name, options: ['CNN', 'Attn_BiLSTM', 'RNN', 'BERT']")
     parser.add_argument('--EMBEDDING_METHOD', type=str, default='glove', help="options: ['glove', 'word2vec']")
@@ -180,9 +178,8 @@ if __name__ == '__main__':
     print('Args in experiment:')
     print(args)
 
-    model = Model(BATCH_SIZE=args.BATCH_SIZE, MODEL_NAME=args.MODEL_NAME, lr=args.INITIAL_LR, embedding_layer=args.EMBEDDING_DIM)
-    model.train(N_EPOCHS=args.N_EPOCHS, early_stopping=args.EARLY_STOPPING, save_best_model=args.SAVE_BEST_MODEL)
+    model = Model(BATCH_SIZE=args.BATCH_SIZE, MODEL_NAME=args.MODEL_NAME, lr=args.INITIAL_LR,
+                  embedding_layer=args.EMBEDDING_DIM)
+    model.train(N_EPOCHS=args.N_EPOCHS, early_stopping=args.EARLY_STOPPING, save_best_model=args.SAVE_BEST_MODEL, lradj=args.lradj)
     model.test()
     model.plot()
-
-
