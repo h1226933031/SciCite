@@ -9,14 +9,17 @@ import matplotlib.pyplot as plt
 from scibert_model import data_preprocessing
 import argparse
 import warnings
+import numpy as np
+
+warnings.filterwarnings("ignore")
 
 class Model(nn.Module):
 
-    def __init__(self, MODEL_NAME='RNN', BATCH_SIZE=256, PATH='rnn_batch_'):
+    def __init__(self, MODEL_NAME='RNN', BATCH_SIZE=256, PATH='rnn_batch_', lr=0.001, embedding_layer=100):
         self.BATCH_SIZE = 256
-        self.train_iter, self.val_iter, self.test_iter, self.TEXT, self.LABEL = get_iters(embedding_method=,batch_size=BATCH_SIZE)
+        self.train_iter, self.val_iter, self.test_iter, self.TEXT, self.LABEL = get_iters(batch_size=BATCH_SIZE)
         self.INPUT_DIM = len(self.TEXT.vocab)
-        self.EMBEDDING_DIM = 100
+        self.EMBEDDING_DIM = embedding_layer
         self.MODEL_NAME = MODEL_NAME
         self.PATH = PATH
         # this part is to store the loss and accuracy while training the model
@@ -24,6 +27,7 @@ class Model(nn.Module):
         self.total_valid_loss = []
         self.total_train_acc = []
         self.total_valid_acc = []
+        self.lr = lr
 
         # ----- choose the target model ----- #
         if MODEL_NAME == 'BERT':
@@ -50,7 +54,7 @@ class Model(nn.Module):
             self.model = RNN.Model(DROPOUT, self.INPUT_DIM, self.EMBEDDING_DIM, N_HIDDEN, NUM_CLASSES)
 
         else:
-            print(f'model type {MODEL_NAME} is currently not supported.')
+            print(f'model type {self.MODEL_NAME} is currently not supported.')
             exit()
         # ----- choose the target model ----- #
 
@@ -67,10 +71,11 @@ class Model(nn.Module):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = self.model.to(self.device)
         self.criterion = nn.CrossEntropyLoss().to(self.device)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
 
     def train(self, patient=5, N_EPOCHS=100, early_stopping=True, save_best_model=True):
         patient_count = 0
+        best_valid_loss = np.inf
         for epoch in range(N_EPOCHS):
             start_time = time.time()
 
@@ -135,44 +140,6 @@ if __name__ == '__main__':
         # set experimental configs
     parser.add_argument('--MODEL_NAME', type=str, default='Attn_BiLSTM',
                         help="model name, options: ['CNN', 'Attn_BiLSTM', 'RNN', 'BERT']")
-    parser.add_argument('--EMBEDDING_METHOD', type=str, default=100, help="options: ['glove', 'word2vec']")
-    parser.add_argument('--EMBEDDING_DIM', type=int, default=100, help="the embed dimension you choose")
-    parser.add_argument('--OUTPUT_DIM', type=int, default=3, help='usually refers to num_classes')
-
-    # set training configs
-    parser.add_argument('--N_EPOCHS', type=int, default=1)
-    parser.add_argument('--BATCH_SIZE', type=int, default=256)
-    parser.add_argument('--INITIAL_LR', type=float, default=0.0001)
-    parser.add_argument('--EARLY_STOPPING', type=bool, default=True)
-    parser.add_argument('--SAVE_BEST_MODEL', type=bool, default=True)
-
-    args = parser.parse_args()
-    print('Args in experiment:')
-    print(args)
-
-    model = Model(BATCH_SIZE=args.BATCH_SIZE, MODEL_NAME=args.MODEL_NAME)
-    model.train(N_EPOCHS=args.N_EPOCHS, early_stopping=args.EARLY_STOPPING, save_best_model=args.SAVE_BEST_MODEL)
-    model.test()
-    model.plot()
-
-import torch
-import torch.nn as nn
-from utils.data_loader import get_iters
-import torch.optim as optim
-import time
-from utils.utils import train, evaluate, epoch_time
-from models import CNN, BiLSTM_Attention, BERT, RNN
-
-
-
-warnings.filterwarnings("ignore")
-
-def main():
-    parser = argparse.ArgumentParser(description='Experiments for Citation Text Multi-classification')
-
-    # set experimental configs
-    parser.add_argument('--MODEL_NAME', type=str, default='Attn_BiLSTM',
-                        help="model name, options: ['CNN', 'Attn_BiLSTM', 'RNN', 'BERT']")
     parser.add_argument('--EMBEDDING_METHOD', type=str, default='glove', help="options: ['glove', 'word2vec']")
     parser.add_argument('--EMBEDDING_DIM', type=int, default=100, help="the embed dimension you choose")
     parser.add_argument('--OUTPUT_DIM', type=int, default=3, help='usually refers to num_classes')
@@ -187,22 +154,10 @@ def main():
     args = parser.parse_args()
     print('Args in experiment:')
     print(args)
-    # load batches first
-    train_iter, val_iter, test_iter, TEXT, LABEL = get_iters(batch_size=args.BATCH_SIZE)
-    INPUT_DIM = len(TEXT.vocab)
 
-    # set model configs
-    if args.MODEL_NAME == 'BERT':
-        pass
+    model = Model(BATCH_SIZE=args.BATCH_SIZE, MODEL_NAME=args.MODEL_NAME, lr=args.INITIAL_LR, embedding_layer=args.EMBEDDING_DIM)
+    model.train(N_EPOCHS=args.N_EPOCHS, early_stopping=args.EARLY_STOPPING, save_best_model=args.SAVE_BEST_MODEL)
+    model.test()
+    model.plot()
 
-    elif args.MODEL_NAME == 'CNN':
-        # CNN hyper parameters
-        N_FILTERS = 100
-        FILTER_SIZES = [2, 3, 4]
-        DROPOUT = 0.5
-        # PAD_IDX = TEXT.vocab.stoi[TEXT.pad_token]
-        model = CNN.Model(INPUT_DIM, args.EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, args.OUTPUT_DIM, DROPOUT,
-                          pad_idx=None)
 
-    elif args.MODEL_NAME == 'Attn_BiLSTM':
-        N_HIDDEN = 5  # number of hidden units in o
