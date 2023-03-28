@@ -3,7 +3,7 @@ import torch.nn as nn
 from utils.data_loader import get_iters
 import torch.optim as optim
 import time
-from utils.utils import train, evaluate, epoch_time, adjust_learning_rate
+from utils.utils import train, evaluate, epoch_time, adjust_learning_rate, train_bert, evaluate_bert
 from models import CNN, BiLSTM_Attention, BERT, RNN
 import matplotlib.pyplot as plt
 from scibert_model import data_preprocessing
@@ -11,15 +11,15 @@ import argparse
 import warnings
 import numpy as np
 import json
-
+from scibert_model import model
 warnings.filterwarnings("ignore")
 
 
 class Model(nn.Module):
 
     def __init__(self, MODEL_NAME='RNN', BATCH_SIZE=256, PATH='rnn_batch_', lr=0.001, embedding_layer=100, train_data_path="./scicite-data/train.jsonl", valid_data_path="./scicite-data/dev.jsonl", test_data_path="./scicite-data/test.jsonl"):
+        super(Model, self).__init__()
         self.BATCH_SIZE = 256
-        self.INPUT_DIM = len(self.TEXT.vocab)
         self.EMBEDDING_DIM = embedding_layer
         self.MODEL_NAME = MODEL_NAME
         self.PATH = PATH
@@ -46,26 +46,26 @@ class Model(nn.Module):
                     data.append(json.loads(x))
                 return data
             train_data, test_data, dev_data = load_data(train_data_path), load_data(test_data_path), load_data(valid_data_path)
-            train = data_preprocessing.bert_process(train_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=0.01)
+            train = data_preprocessing.bert_process(train_data, batch_size=self.BATCH_SIZE, pretrained_model_name=self.bertmodel_name, confidence_level=0, cite2sentence_percent=1)
             # train = bert_process(train_data, train_data_sci ,batch_size=bz, pretrained_model_name=bertmodel_name, repeat=repeat)
-            train_loader = train.data_loader
+            self.train_iter = train.data_loader
             print(len(train.data))
 
-            dev = data_preprocessing.bert_process(dev_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=0.01)
-            dev_loader = dev.data_loader
+            dev = data_preprocessing.bert_process(dev_data, batch_size=self.BATCH_SIZE, pretrained_model_name=self.bertmodel_name, confidence_level=0, cite2sentence_percent=1)
+            self.val_iter = dev.data_loader
 
-            test = data_preprocessing.bert_process(test_data, batch_size=bz, pretrained_model_name=bertmodel_name, confidence_level=0, cite2sentence_percent=0.01)
-            test_loader = test.data_loader
+            test = data_preprocessing.bert_process(test_data, batch_size=self.BATCH_SIZE, pretrained_model_name=self.bertmodel_name, confidence_level=0, cite2sentence_percent=1)
+            self.test_iter = test.data_loader
 
         else:
             self.train_iter, self.val_iter, self.test_iter, self.TEXT, self.LABEL = get_iters(batch_size=BATCH_SIZE, train_data_path=train_data_path, test_data_path=test_data_path, valid_data_path=valid_data_path)
 
         # ----- choose the target model ----- #
 
-        if MODEL_NAME == 'BERT':
-            self.model = BERT.Model()
+        if self.MODEL_NAME == 'BERT':
+            self.model = model.CustomBertClassifier(hidden_dim= 100, bert_dim_size=self.bert_dim_size, num_of_output=3, model_name=self.bertmodel_name)
 
-        elif MODEL_NAME == 'CNN':
+        elif self.MODEL_NAME == 'CNN':
             # CNN hyper parameters
             N_FILTERS = 100
             FILTER_SIZES = [2, 3, 4]
@@ -75,12 +75,12 @@ class Model(nn.Module):
             self.model = CNN.Model(self.INPUT_DIM, self.EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, OUTPUT_DIM, DROPOUT,
                                    pad_idx=None)
 
-        elif MODEL_NAME == 'Attn_BiLSTM':
+        elif self.MODEL_NAME == 'Attn_BiLSTM':
             N_HIDDEN = 5  # number of hidden units in one cell
             NUM_CLASSES = 3
             self.model = BiLSTM_Attention.Model(self.INPUT_DIM, self.EMBEDDING_DIM, N_HIDDEN, NUM_CLASSES)
 
-        elif MODEL_NAME == 'RNN':
+        elif self.MODEL_NAME == 'RNN':
             DROPOUT = 0.1
             N_HIDDEN = 32
             NUM_CLASSES = 3
@@ -100,7 +100,10 @@ class Model(nn.Module):
             UNK_IDX = self.TEXT.vocab.stoi[self.TEXT.unk_token]
             self.model.embedding.weight.data[UNK_IDX] = torch.zeros(self.EMBEDDING_DIM)
             # model.embedding.weight.data[PAD_IDX] = torch.zeros(EMBEDDING_DIM)
-
+        if self.MODEL_NAME == "BERT":
+            self.INPUT_DIM = 0
+        else:
+            self.INPUT_DIM = len(self.TEXT.vocab)
         # ----- checking devices ----- #
         if torch.cuda.is_available():
             print("Cuda is available, using CUDA")
@@ -112,9 +115,11 @@ class Model(nn.Module):
             print("No acceleration device detected, using CPU")
             self.device = torch.device('cpu')
         # self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
         self.model = self.model.to(self.device)
-        self.criterion = nn.CrossEntropyLoss().to(self.device)
+        if self.MODEL_NAME == "BERT":
+            self.criterion = nn.NLLLoss()
+        else:
+            self.criterion = nn.CrossEntropyLoss().to(self.device)
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
 
     def train(self, patient=5, N_EPOCHS=100, early_stopping=True, save_best_model=True, lradj=None):
@@ -122,9 +127,13 @@ class Model(nn.Module):
         best_valid_loss = np.inf
         for epoch in range(N_EPOCHS):
             start_time = time.time()
+            if self.MODEL_NAME == "BERT":
+                train_loss, train_acc = train_bert(model=self.model, train_loader=self.train_iter, optimizer=self.optimizer, criterion=self.criterion, device=self.device, bz=self.BATCH_SIZE)
+                valid_loss, valid_acc = evaluate_bert(model=self.model, data=self.val_iter, criterion=self.criterion)
 
-            train_loss, train_acc = train(self.model, self.train_iter, self.optimizer, self.criterion, self.MODEL_NAME)
-            valid_loss, valid_acc = evaluate(self.model, self.val_iter, self.criterion, self.MODEL_NAME)
+            else:
+                train_loss, train_acc = train(self.model, self.train_iter, self.optimizer, self.criterion, self.MODEL_NAME)
+                valid_loss, valid_acc = evaluate(self.model, self.val_iter, self.criterion, self.MODEL_NAME)
 
             end_time = time.time()
 
@@ -180,29 +189,32 @@ class Model(nn.Module):
 
 # training
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Experiments for Citation Text Multi-classification')
+    # parser = argparse.ArgumentParser(description='Experiments for Citation Text Multi-classification')
+    #
+    # # set experimental configs
+    # parser.add_argument('--MODEL_NAME', type=str, default='Attn_BiLSTM',
+    #                     help="model name, options: ['CNN', 'Attn_BiLSTM', 'RNN', 'BERT']")
+    # parser.add_argument('--EMBEDDING_METHOD', type=str, default='glove', help="options: ['glove', 'word2vec']")
+    # parser.add_argument('--EMBEDDING_DIM', type=int, default=100, help="the embed dimension you choose")
+    # parser.add_argument('--OUTPUT_DIM', type=int, default=3, help='usually refers to num_classes')
+    #
+    # # set training configs
+    # parser.add_argument('--N_EPOCHS', type=int, default=1)
+    # parser.add_argument('--BATCH_SIZE', type=int, default=256)
+    # parser.add_argument('--INITIAL_LR', type=float, default=0.0001)
+    # parser.add_argument('--EARLY_STOPPING', type=bool, default=True)
+    # parser.add_argument('--SAVE_BEST_MODEL', type=bool, default=True)
+    # parser.add_argument('--lradj', type=str, default=None, help="options: [None, 'type1', 'type2', 'type3', 'type4']")
+    #
+    # args = parser.parse_args()
+    # print('Args in experiment:')
+    # print(args)
+    #
+    # model = Model(BATCH_SIZE=args.BATCH_SIZE, MODEL_NAME=args.MODEL_NAME, lr=args.INITIAL_LR,
+    #               embedding_layer=args.EMBEDDING_DIM)
+    # model.train(N_EPOCHS=args.N_EPOCHS, early_stopping=args.EARLY_STOPPING, save_best_model=args.SAVE_BEST_MODEL, lradj=args.lradj)
+    model = Model(MODEL_NAME="BERT")
+    model.train()
 
-    # set experimental configs
-    parser.add_argument('--MODEL_NAME', type=str, default='Attn_BiLSTM',
-                        help="model name, options: ['CNN', 'Attn_BiLSTM', 'RNN', 'BERT']")
-    parser.add_argument('--EMBEDDING_METHOD', type=str, default='glove', help="options: ['glove', 'word2vec']")
-    parser.add_argument('--EMBEDDING_DIM', type=int, default=100, help="the embed dimension you choose")
-    parser.add_argument('--OUTPUT_DIM', type=int, default=3, help='usually refers to num_classes')
-
-    # set training configs
-    parser.add_argument('--N_EPOCHS', type=int, default=1)
-    parser.add_argument('--BATCH_SIZE', type=int, default=256)
-    parser.add_argument('--INITIAL_LR', type=float, default=0.0001)
-    parser.add_argument('--EARLY_STOPPING', type=bool, default=True)
-    parser.add_argument('--SAVE_BEST_MODEL', type=bool, default=True)
-    parser.add_argument('--lradj', type=str, default=None, help="options: [None, 'type1', 'type2', 'type3', 'type4']")
-
-    args = parser.parse_args()
-    print('Args in experiment:')
-    print(args)
-
-    model = Model(BATCH_SIZE=args.BATCH_SIZE, MODEL_NAME=args.MODEL_NAME, lr=args.INITIAL_LR,
-                  embedding_layer=args.EMBEDDING_DIM)
-    model.train(N_EPOCHS=args.N_EPOCHS, early_stopping=args.EARLY_STOPPING, save_best_model=args.SAVE_BEST_MODEL, lradj=args.lradj)
     model.test()
     model.plot()

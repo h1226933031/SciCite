@@ -9,8 +9,6 @@ from transformers import AutoModel
 
 class CustomBertClassifier(nn.Module):
     def __init__(self, hidden_dim= 100, bert_dim_size=768, num_of_output=3, lstm_hidden = 100,proj_size=100, model_name = "bert-base-uncased"):
-        """
-        """
         super(CustomBertClassifier, self).__init__()
         self.dropout = nn.Dropout(p=0.2)
         self.linear1 = nn.Linear(2*lstm_hidden, hidden_dim)
