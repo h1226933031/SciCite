@@ -28,7 +28,15 @@ class Model(nn.Module):
         self.total_train_acc = []
         self.total_valid_acc = []
         self.lr = lr
+        self.bertmodel_name = 'allenai/scibert_scivocab_uncased'
 
+        # ----- assign the bertmodel_name ----- #
+        if self.bertmodel_name == 'bert-base-uncased':
+            self.bert_dim_size = 768
+        elif self.bertmodel_name == 'allenai/scibert_scivocab_uncased':
+            self.bert_dim_size = 768
+        else:
+            self.bert_dim_size = 1024
         # ----- choose the target model ----- #
         if MODEL_NAME == 'BERT':
             self.model = BERT.Model()
@@ -68,7 +76,18 @@ class Model(nn.Module):
             self.model.embedding.weight.data[UNK_IDX] = torch.zeros(self.EMBEDDING_DIM)
             # model.embedding.weight.data[PAD_IDX] = torch.zeros(EMBEDDING_DIM)
 
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        # ----- checking devices ----- #
+        if torch.cuda.is_available():
+            print("Cuda is available, using CUDA")
+            self.device = torch.device('cuda')
+        elif torch.backends.mps.is_available():
+            print("MacOS acceleration is available, using MPS")
+            self.device = torch.device('mps')
+        else:
+            print("No acceleration device detected, using CPU")
+            self.device = torch.device('cpu')
+        # self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
         self.model = self.model.to(self.device)
         self.criterion = nn.CrossEntropyLoss().to(self.device)
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
@@ -92,6 +111,7 @@ class Model(nn.Module):
             epoch_mins, epoch_secs = epoch_time(start_time, end_time)
 
             if valid_loss < best_valid_loss:
+                patient_count = 0
                 best_valid_loss = valid_loss
                 torch.save(self.model.state_dict(), f'./ckpt/{self.PATH}-model.pt')
             else:

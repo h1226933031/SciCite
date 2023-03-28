@@ -43,8 +43,8 @@ train_data, test_data, dev_data = load_data(SCICITE_TRAIN_PATH), load_data(SCICI
 # train_data, test_data, dev_data = train_data[:40], test_data[:40], dev_data[:40]
 bz = 300
 # bertmodel_name = 'bert-large-uncased'
-# bertmodel_name = 'allenai/scibert_scivocab_uncased'
-bertmodel_name = 'bert-base-uncased'
+bertmodel_name = 'allenai/scibert_scivocab_uncased'
+#bertmodel_name = 'bert-base-uncased'
 
 if bertmodel_name == 'bert-base-uncased':
     bert_dim_size = 768
