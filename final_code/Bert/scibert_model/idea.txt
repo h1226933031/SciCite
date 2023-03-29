@@ -1,0 +1,9 @@
+1. only repeat train data, not validation and test data. repeat = [1, 2, 4]
+2. reduce layers number
+3. use weighted F1 score to replace macro
+4. try: not use ReduceLROnPlateau, it let learning rate reduce significantly when metric stopped improving. ?? stop in local maximization? not improve after 5 epochs.
+5. try: change activation function--leaky relu
+6. set sample weight as confidence level?  !!!
+7. for base bert model: @CITATION@ is tokenize as 1030, 11091, 1030
+8. cite2sentence_percent as 0.2
+9. learning rate

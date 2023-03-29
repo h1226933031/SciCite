@@ -3,15 +3,15 @@ import torch.nn as nn
 from utils.data_loader import get_iters
 import torch.optim as optim
 import time
-from utils.utils import train, evaluate, epoch_time, adjust_learning_rate, train_bert, evaluate_bert
+from utils.utils import train, evaluate, epoch_time, adjust_learning_rate #, train_bert, evaluate_bert
 from models import CNN, BiLSTM_Attention, BERT, RNN
 import matplotlib.pyplot as plt
-from scibert_model import data_preprocessing
-import argparse
+#from scibert_model import data_preprocessing
+#import argparse
 import warnings
 import numpy as np
-import json
-from scibert_model import model
+#import json
+#from scibert_model import model
 warnings.filterwarnings("ignore")
 
 
@@ -29,23 +29,32 @@ class Model(nn.Module):
         self.total_train_acc = []
         self.total_valid_acc = []
         self.lr = lr
+        '''
         self.bertmodel_name = 'allenai/scibert_scivocab_uncased'
-
+        '''
         # ----- assign the bertmodel_name ----- #
+        '''
         if self.bertmodel_name == 'bert-base-uncased':
             self.bert_dim_size = 768
         elif self.bertmodel_name == 'allenai/scibert_scivocab_uncased':
             self.bert_dim_size = 768
         else:
             self.bert_dim_size = 1024
+        '''
         # ----- load training testing valid dataset -----#
+
         if MODEL_NAME == 'BERT':
+            pass
+            '''
             def load_data(path):
                 data = []
                 for x in open(path, encoding='utf-8'):
                     data.append(json.loads(x))
                 return data
-            train_data, test_data, dev_data = load_data(train_data_path), load_data(test_data_path), load_data(valid_data_path)
+            train_data = load_data(train_data_path)
+            dev_data = load_data(valid_data_path)
+            test_data = load_data(test_data_path)
+            #train_data, test_data, dev_data = load_data(train_data_path), load_data(test_data_path), load_data(valid_data_path)
             train = data_preprocessing.bert_process(train_data, batch_size=self.BATCH_SIZE, pretrained_model_name=self.bertmodel_name, confidence_level=0, cite2sentence_percent=1)
             # train = bert_process(train_data, train_data_sci ,batch_size=bz, pretrained_model_name=bertmodel_name, repeat=repeat)
             self.train_iter = train.data_loader
@@ -56,15 +65,23 @@ class Model(nn.Module):
 
             test = data_preprocessing.bert_process(test_data, batch_size=self.BATCH_SIZE, pretrained_model_name=self.bertmodel_name, confidence_level=0, cite2sentence_percent=1)
             self.test_iter = test.data_loader
+            '''
 
         else:
             self.train_iter, self.val_iter, self.test_iter, self.TEXT, self.LABEL = get_iters(batch_size=BATCH_SIZE, train_data_path=train_data_path, test_data_path=test_data_path, valid_data_path=valid_data_path)
-
+        if self.MODEL_NAME == "BERT":
+            pass
+            '''
+            self.INPUT_DIM = 0
+            '''
+        else:
+            self.INPUT_DIM = len(self.TEXT.vocab)
         # ----- choose the target model ----- #
 
         if self.MODEL_NAME == 'BERT':
+            '''
             self.model = model.CustomBertClassifier(hidden_dim= 100, bert_dim_size=self.bert_dim_size, num_of_output=3, model_name=self.bertmodel_name)
-
+            '''
         elif self.MODEL_NAME == 'CNN':
             # CNN hyper parameters
             N_FILTERS = 100
@@ -84,7 +101,7 @@ class Model(nn.Module):
             DROPOUT = 0.1
             N_HIDDEN = 32
             NUM_CLASSES = 3
-            self.model = RNN.Model(DROPOUT, self.INPUT_DIM, self.EMBEDDING_DIM, N_HIDDEN, NUM_CLASSES)
+            self.model = RNN.Model(dropout_rate=DROPOUT, vocab_size=self.INPUT_DIM, embedding_dim=self.EMBEDDING_DIM, hidden_size=N_HIDDEN, output_dim=NUM_CLASSES)
 
         else:
             print(f'model type {self.MODEL_NAME} is currently not supported.')
@@ -93,6 +110,7 @@ class Model(nn.Module):
 
         # ----- because BERT is a END2END model, there is no need to load the pretrain embedding ----- #
         if MODEL_NAME not in ['BERT']:
+            '''
             pretrained_embeddings = self.TEXT.vocab.vectors
             self.model.embedding.weight.data.copy_(pretrained_embeddings)
 
@@ -100,22 +118,20 @@ class Model(nn.Module):
             UNK_IDX = self.TEXT.vocab.stoi[self.TEXT.unk_token]
             self.model.embedding.weight.data[UNK_IDX] = torch.zeros(self.EMBEDDING_DIM)
             # model.embedding.weight.data[PAD_IDX] = torch.zeros(EMBEDDING_DIM)
-        if self.MODEL_NAME == "BERT":
-            self.INPUT_DIM = 0
-        else:
-            self.INPUT_DIM = len(self.TEXT.vocab)
+            '''
         # ----- checking devices ----- #
-        if torch.cuda.is_available():
-            print("Cuda is available, using CUDA")
-            self.device = torch.device('cuda')
-        elif torch.backends.mps.is_available():
-            print("MacOS acceleration is available, using MPS")
-            self.device = torch.device('mps')
-        else:
-            print("No acceleration device detected, using CPU")
-            self.device = torch.device('cpu')
-        # self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        # if torch.cuda.is_available():
+        #     print("Cuda is available, using CUDA")
+        #     self.device = torch.device('cuda')
+        # elif torch.backends.mps.is_available():
+        #     print("MacOS acceleration is available, using MPS")
+        #     self.device = torch.device('mps')
+        # else:
+        #     print("No acceleration device detected, using CPU")
+        #     self.device = torch.device('cpu')
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = self.model.to(self.device)
+
         if self.MODEL_NAME == "BERT":
             self.criterion = nn.NLLLoss()
         else:
@@ -128,9 +144,10 @@ class Model(nn.Module):
         for epoch in range(N_EPOCHS):
             start_time = time.time()
             if self.MODEL_NAME == "BERT":
+                '''
                 train_loss, train_acc = train_bert(model=self.model, train_loader=self.train_iter, optimizer=self.optimizer, criterion=self.criterion, device=self.device, bz=self.BATCH_SIZE)
                 valid_loss, valid_acc = evaluate_bert(model=self.model, data=self.val_iter, criterion=self.criterion)
-
+                '''
             else:
                 train_loss, train_acc = train(self.model, self.train_iter, self.optimizer, self.criterion, self.MODEL_NAME)
                 valid_loss, valid_acc = evaluate(self.model, self.val_iter, self.criterion, self.MODEL_NAME)
@@ -213,7 +230,7 @@ if __name__ == '__main__':
     # model = Model(BATCH_SIZE=args.BATCH_SIZE, MODEL_NAME=args.MODEL_NAME, lr=args.INITIAL_LR,
     #               embedding_layer=args.EMBEDDING_DIM)
     # model.train(N_EPOCHS=args.N_EPOCHS, early_stopping=args.EARLY_STOPPING, save_best_model=args.SAVE_BEST_MODEL, lradj=args.lradj)
-    model = Model(MODEL_NAME="BERT")
+    model = Model(MODEL_NAME="RNN")
     model.train()
 
     model.test()

@@ -1,7 +1,7 @@
 import torch
 from sklearn.metrics import classification_report
 import numpy as np
-from tqdm import tqdm
+#from tqdm import tqdm
 from torchmetrics import F1Score, Accuracy
 
 
@@ -77,7 +77,7 @@ def train(model, iterator, optimizer, criterion, model_name):
         epoch_acc += acc.item()
 
     return epoch_loss / len(iterator), epoch_acc / len(iterator)
-
+'''
 def train_bert(model, train_loader, optimizer, criterion, device, bz):
     f1s = []
     losses = []
@@ -175,7 +175,7 @@ def evaluate_bert(model, data, data_object, device, criterion):
     # print("Loss : %f, f1 : %f, accuracy: %f" % (loss, f1, accus))
     print("Loss : %f, f1 : %f" % (loss, f1))
     return loss, epoch_acc/len(f1s)
-
+'''
 def adjust_learning_rate(optimizer, epoch, args):
     # lr = args.learning_rate * (0.2 ** (epoch // 2))
     if args.lradj == 'type1':
