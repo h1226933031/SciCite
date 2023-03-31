@@ -157,8 +157,8 @@ if __name__ == '__main__':
     #               embedding_layer=args.EMBEDDING_DIM)
     # model.train(N_EPOCHS=args.N_EPOCHS, early_stopping=args.EARLY_STOPPING, save_best_model=args.SAVE_BEST_MODEL, lradj=args.lradj)
     model = BertModel(PATH='test')
-    #model.train()
-    #model.plot()
+    model.train()
+    model.plot()
     model.test()
     #model.plot()
 
