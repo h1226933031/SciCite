@@ -70,7 +70,7 @@ class BertModel(nn.Module):
 
         self.criterion = nn.NLLLoss()
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-    def train(self, patient=5, N_EPOCHS=100, early_stopping=True, save_best_model=True, lradj=None):
+    def train(self, patient=5, N_EPOCHS=100, early_stopping=True, save_best_model=True, lradj=False):
         patient_count = 0
         best_valid_loss = np.inf
         for epoch in range(N_EPOCHS):
@@ -106,7 +106,9 @@ class BertModel(nn.Module):
             if lradj:
                 adjust_learning_rate(self.optimizer, epoch + 1, 'type1')
     def test(self):  # this is to test the model on the testing dataset
-        best_model = torch.load(f'./ckpt/{self.PATH}-model.pt').get('model_state_dict').cuda()
+        best_model = CustomBertClassifier(hidden_dim= 100, bert_dim_size=self.bert_dim_size, num_of_output=3, model_name=self.bertmodel_name)
+        best_model.load_state_dict(torch.load(f'./ckpt/{self.PATH}-model.pt'))
+        best_model.to(self.device)
         test_loss, test_acc = evaluate_bert(model=best_model, data=self.test_iter, criterion=self.criterion, device=self.device, data_object=self.test_data)
         print(f"The accuracy on the testing dataset is {test_acc} and the loss is {test_loss}")
 
@@ -154,9 +156,10 @@ if __name__ == '__main__':
     # model = Model(BATCH_SIZE=args.BATCH_SIZE, MODEL_NAME=args.MODEL_NAME, lr=args.INITIAL_LR,
     #               embedding_layer=args.EMBEDDING_DIM)
     # model.train(N_EPOCHS=args.N_EPOCHS, early_stopping=args.EARLY_STOPPING, save_best_model=args.SAVE_BEST_MODEL, lradj=args.lradj)
-    model = BertModel()
-    model.train()
+    model = BertModel(PATH='test')
+    #model.train()
+    #model.plot()
     model.test()
-    model.plot()
+    #model.plot()
 
 

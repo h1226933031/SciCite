@@ -136,7 +136,37 @@ class Model(nn.Module):
                 adjust_learning_rate(self.optimizer, epoch + 1, args)
 
     def test(self):  # this is to test the model on the testing dataset
-        best_model = torch.load(f'./ckpt/{self.PATH}-model.pt').get('model_state_dict').cuda()
+        if self.MODEL_NAME == 'BERT':
+            '''
+            self.model = model.CustomBertClassifier(hidden_dim= 100, bert_dim_size=self.bert_dim_size, num_of_output=3, model_name=self.bertmodel_name)
+            '''
+        elif self.MODEL_NAME == 'CNN':
+            # CNN hyper parameters
+            N_FILTERS = 100
+            FILTER_SIZES = [2, 3, 4]
+            OUTPUT_DIM = len(self.LABEL.vocab)
+            DROPOUT = 0.5
+            # PAD_IDX = TEXT.vocab.stoi[TEXT.pad_token]
+            best_model = CNN.Model(self.INPUT_DIM, self.EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, OUTPUT_DIM, DROPOUT,
+                                   pad_idx=None)
+
+        elif self.MODEL_NAME == 'Attn_BiLSTM':
+            N_HIDDEN = 5  # number of hidden units in one cell
+            NUM_CLASSES = 3
+            best_model = BiLSTM_Attention.Model(self.INPUT_DIM, self.EMBEDDING_DIM, N_HIDDEN, NUM_CLASSES)
+
+        elif self.MODEL_NAME == 'RNN':
+            DROPOUT = 0.1
+            N_HIDDEN = 32
+            NUM_CLASSES = 3
+            best_model = RNN.Model(dropout_rate=DROPOUT, vocab_size=self.INPUT_DIM, embedding_dim=self.EMBEDDING_DIM, hidden_size=N_HIDDEN, output_dim=NUM_CLASSES)
+
+        else:
+            print(f'model type {self.MODEL_NAME} is currently not supported.')
+            exit()
+        best_model.load_state_dict(torch.load(f'./ckpt/{self.PATH}-model.pt'))
+        best_model.to(self.device)
+        #best_model = torch.load(f'./ckpt/{self.PATH}-model.pt').get('model_state_dict').cuda()
         test_loss, test_acc = evaluate(best_model, self.test_iter, self.criterion, self.MODEL_NAME)
         print(f"The accuracy on the testing dataset is {test_acc} and the loss is {test_loss}")
 
