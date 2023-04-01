@@ -31,7 +31,7 @@
 %
 % and set <dim> to something 5cm or larger.
 
-\title{CS4248 Final Report Template}
+\title{SciCite Final Report}
 
 % Author information can be set in various styles:
 % For several authors from the same institution:
@@ -49,10 +49,10 @@
 %         Author 2 \\ Address line \\ ... \\ Address line \And
 %         Author 3 \\ Address line \\ ... \\ Address line}
 
-\author{A01234567X, A02345678Y \\
-  Group XX \\
-  Mentored by YY \\
-  \texttt{\{a01234567,a02345678\}@u.nus.edu}}
+\author{A0251134U, A0251434M, A0222300H, A0251155M, A0251403W \\
+  Group 14 \\
+  Mentored by Hai Ye \\
+  \texttt{\{e0950138, e0950438, e0559832, e0950159, e0950407\}@u.nus.edu}}
 
 \begin{document}
 \maketitle
@@ -68,6 +68,34 @@ You can (and should) access the live version of this file through the URL below:
 \label{s:best}
 
 Your group report is {\bf strictly} limited to eight pages\footnote{For the main body of the report: title, abstract and main sections. Backmatter does not count towards this limit.} and summarises all of your group's understanding of your problem, models, experimental results and insights.  Typically, such (empirical/experimental) scientific reports for natural language processing follows a five- to six-section format ({}suggested length in parentheses, for a {\bf eight}-page limit; do not feel compelled to match these suggested lengths), as follows:
+
+\section{\bf Introduction}
+\section{\bf Related Work / Background}
+\subsection{Citation intent classification}
+Recently, citation intent classification has gained a lot of attention because it is critical for machine reading of individual publications and automated analysis of the scientific literature. The first related dataset (ACL Anthology Reference Corpus) is proposed by Steven et.al (2008) \cite{220fe80c8f374e458d79d387be245c5f}. After that, Arman et.al (2019) \cite{cohan2019structural} proposed a dataset (SciCite) which is five time large and covered multiple scientific area compared with existing dataset. Based on this dataset, we can better train the model.
+\subsection{Elmo \cite{peters-etal-2018-deep} }
+Matthew et.al (2018) \cite{peters-etal-2018-deep} proposed a novel way, Elmo, to represent the words into a vector or embeddings which can generate context-sensitive word embeddings that capture the syntactic and semantic nuances of words in their context. 
+ELmo \cite{peters-etal-2018-deep}  is based on a two-layer BiLSTM\cite{650093}. First, a character-level convolutional neural network is used to convert the words of a text string into raw word vectors, and then the raw word vectors act as inputs to the first BiLSTM\cite{650093} layer. The forward pass contains information about a certain word and the context (other words) before that word and the backward pass contains information about the word and the context after it. This pair of information, from the forward and backward pass, forms the intermediate word vectors.
+These intermediate word vectors are fed into the next layer of biLSTM\cite{650093}. The final representation (ELMo \cite{peters-etal-2018-deep} ) is the weighted sum of the raw word vectors and the 2 intermediate word vectors.
+\subsection{GloVe\cite{pennington2014glove}}
+Proposed by Pennington et.al (2014) \cite{pennington2014glove}, GloVe has been widely used in word embedding. The idea of GLoVe\cite{pennington2014glove} is to learn the vectors by conducting dimensionality reduction on the co-occurrence counts matrix and become a word-to-vector technique that leverages both global and local statistics of a corpus in order to come up with a principled loss function which uses both these. 
+GLoVe\cite{pennington2014glove} can better represent the semantic meaning of a word and produce a vector space with meaningful substructure.
+\subsection{BiLSTM\cite{650093}}
+The idea of BiLSTM first came up in Schuster et al.(1997)\cite{650093}. The basic concept of this model is that, from human perspective, understanding a time series data should not only be forward but also backward. Thus, while building a model, we should also consider backward. BiLSTM\cite{650093} model consist of 2 LSTM \cite{6795963} : one taking the input in a forward direction, and the other in a backwards direction. BiLSTMs\cite{650093} effectively increase the amount of information available to the network, improving the context available to the algorithm.
+
+\subsection{Bert\cite{devlin2019bert}}
+Bert, Bidirectional Encoder Representations from Transformers (7), has been widely used in NLP and showed a great performance in different task. The idea behind Bert\cite{devlin2019bert} is based on a pre-trained transformer-based encoder to generate contextualized word embeddings that can be fine-tuned on specific downstream natural language processing tasks. Unlike BiLSTM\cite{650093} which simply concatenate the forward and backward output, Transformer can learn from both directions simultaneously. By considering the entire context of a word in a sentence, BERT\cite{devlin2019bert} can capture complex linguistic phenomena and improve the accuracy of NLP applications.
+
+\section{\bf Corpus Analysis \& Method}
+\section{\bf Experiments}
+\section{\bf Discussion}
+\section{\bf Conclusion}
+\section{\bf Reference}
+
+\bibliographystyle{acl_natbib} 
+\bibliography{custom}
+
+
 
 \begin{enumerate}
     \item {\bf Introduction} (1/2--1 page): Motivate your work, state the problem statement clearly (inputs and outputs), and summarise your key contributions.  Optional to include are a concluding textual navigation paragraph, and/or running (microanalysis) example. 
