@@ -23,13 +23,13 @@ def epoch_time(start_time, end_time):
 
 
 
-def train_bert(model, train_loader, optimizer, criterion, device, bz):
+def train_bert(model, train_loader, optimizer, criterion, device, bz, accuracy_factor, class_factor):
     f1s = []
     losses = []
     epoch_acc = 0
     num_of_output = 3
-    class_factor = 1.5
-    accuracy_factor = 1.2
+    #class_factor = 1.5
+    #accuracy_factor = 1.2
     for batch in tqdm(train_loader):
         x, y = batch
         model.train()
@@ -60,14 +60,14 @@ def train_bert(model, train_loader, optimizer, criterion, device, bz):
     return loss, f1
 
 
-def evaluate_bert(model, data, data_object, device, criterion):
+def evaluate_bert(model, data, data_object, device, criterion, class_factor=1.5, accuracy_factor = 1.2):
     # batch_size = 0
     f1s = []
     losses = []
     # accus = []
     epoch_acc = 0
-    class_factor = 1.5
-    accuracy_factor = 1.2
+    #class_factor = 1.5
+    #accuracy_factor = 1.2
     num_of_output = 3
     c = {str(i): 0 for i in range(3)}
     p = {str(i): 0 for i in range(3)}

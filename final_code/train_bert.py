@@ -13,24 +13,27 @@ import matplotlib.pyplot as plt
 from collections import defaultdict, Counter, OrderedDict
 import torch.nn.functional as F
 import math
-
+import logging
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 class BertModel(nn.Module):
 
-    def __init__(self, BATCH_SIZE=256, PATH='rnn_batch_', lr=0.001, embedding_layer=100, train_data_path="./scicite-data/train.jsonl", valid_data_path="./scicite-data/dev.jsonl", test_data_path="./scicite-data/test.jsonl"):
+    def __init__(self, BATCH_SIZE=256, PATH='rnn_batch_', lr=0.001, embedding_layer=100, train_data_path="./scicite-data/train.jsonl", valid_data_path="./scicite-data/dev.jsonl", test_data_path="./scicite-data/test.jsonl", class_factor=1.5, accuacy_factor=1.2, bertmodel_name='allenai/scibert_scivocab_uncased'):
         super(BertModel, self).__init__()
         self.BATCH_SIZE = 256
         self.EMBEDDING_DIM = embedding_layer
         self.PATH = PATH
+        self.class_factor = class_factor
+        self.accuracy_factor = accuacy_factor
         # this part is to store the loss and accuracy while training the model
         self.total_train_loss = []
         self.total_valid_loss = []
         self.total_train_acc = []
         self.total_valid_acc = []
+
         self.lr = lr
-        self.bertmodel_name = 'allenai/scibert_scivocab_uncased'
+        self.bertmodel_name = bertmodel_name
         if self.bertmodel_name == 'bert-base-uncased':
             self.bert_dim_size = 768
         elif self.bertmodel_name == 'allenai/scibert_scivocab_uncased':
@@ -76,8 +79,8 @@ class BertModel(nn.Module):
         for epoch in range(N_EPOCHS):
             start_time = time.time()
             print('start training')
-            train_loss, train_acc = train_bert(model=self.model, train_loader=self.train_iter, optimizer=self.optimizer, criterion=self.criterion, device=self.device, bz=self.BATCH_SIZE)
-            valid_loss, valid_acc = evaluate_bert(model=self.model, data=self.val_iter, criterion=self.criterion, data_object=self.dev_data, device=self.device)
+            train_loss, train_acc = train_bert(model=self.model, train_loader=self.train_iter, optimizer=self.optimizer, criterion=self.criterion, device=self.device, bz=self.BATCH_SIZE, accuracy_factor=self.accuracy_factor, class_factor=self.class_factor)
+            valid_loss, valid_acc = evaluate_bert(model=self.model, data=self.val_iter, criterion=self.criterion, data_object=self.dev_data, device=self.device, accuracy_factor=self.accuracy_factor, class_factor=self.class_factor)
 
             end_time = time.time()
 
@@ -109,7 +112,8 @@ class BertModel(nn.Module):
         best_model = CustomBertClassifier(hidden_dim= 100, bert_dim_size=self.bert_dim_size, num_of_output=3, model_name=self.bertmodel_name)
         best_model.load_state_dict(torch.load(f'./ckpt/{self.PATH}-model.pt'))
         best_model.to(self.device)
-        test_loss, test_acc = evaluate_bert(model=best_model, data=self.test_iter, criterion=self.criterion, device=self.device, data_object=self.test_data)
+        test_loss, test_acc = evaluate_bert(model=best_model, data=self.test_iter, criterion=self.criterion, device=self.device, data_object=self.test_data, accuracy_factor=self.accuracy_factor, class_factor=self.class_factor)
+        logging.info(f"The accuracy on the testing dataset is {test_acc} and the loss is {test_loss}")
         print(f"The accuracy on the testing dataset is {test_acc} and the loss is {test_loss}")
 
     def plot(self):  # plot the model performance
@@ -156,10 +160,20 @@ if __name__ == '__main__':
     # model = Model(BATCH_SIZE=args.BATCH_SIZE, MODEL_NAME=args.MODEL_NAME, lr=args.INITIAL_LR,
     #               embedding_layer=args.EMBEDDING_DIM)
     # model.train(N_EPOCHS=args.N_EPOCHS, early_stopping=args.EARLY_STOPPING, save_best_model=args.SAVE_BEST_MODEL, lradj=args.lradj)
-    model = BertModel(PATH='test')
-    model.train()
-    model.plot()
-    model.test()
+    logging.basicConfig(filename='store_the_out_put.log', level=logging.INFO)
+    for bert_type in ['bert-base-uncased', 'large_bert', 'allenai/scibert_scivocab_uncased']:
+        for lr in [0.1, 0.01, 0.001, 0.0001]:
+            for af in [0.8, 1.0, 1.2, 1.4]:
+                for cf in [0.5, 1.0, 1.5, 2.0]:
+                    logging.info('# ------ Started training the model ------#')
+                    logging.info(f'the parameter of {bert_type} model: lr {lr}, accuracy factor {af}, class factor {cf}')
+                    model = BertModel(PATH=f'{bert_type}_lr-{lr}_af-{af}_cf-{cf}', accuacy_factor=af, lr=lr, class_factor=cf, bertmodel_name=bert_type)
+                    model.train()
+                    logging.info('# ------ end training the model ------#')
+                    model.plot()
+                    logging.info('# ------ start testing the model ------#')
+                    model.test()
+                    logging.info('# ------ end testing the model ------#')
     #model.plot()
 
 
