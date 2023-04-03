@@ -13,7 +13,10 @@ def load_n_preprocess(json_path, processor, label_dic, csv_format=False):
     else:  # load json format
         jsons = [json.loads(x) for x in open(json_path, "r", encoding="utf-8")]  # a list of dict
         texts = processor.preprocessing([x['string'] for x in jsons])  # a list of lists
-        labels = np.array([label_dic[x['label']] for x in jsons], dtype=np.int32)
+        try:
+            labels = np.array([label_dic[x['label']] for x in jsons], dtype=np.int32)
+        except:
+            labels = [label_dic[x['label']] for x in jsons]
     return texts, labels
 
 
@@ -35,6 +38,12 @@ def build_embed_matrix(vector_path='./.vector_cache/glove.6B.50d.txt', n_dim=50,
 
 def encoding_tokens(train_data, word2ix, max_length):  # output: Tensor[n_sample, max_length]
     encoded_ids = []
+    print("len(train_data)", len(train_data))
+    if not max_length:  # batch_size = 1, used for visualization
+        ids = [word2ix[token] if token in word2ix.keys() else 0 for token in train_data]
+        encoded_ids = np.array(ids, dtype=int)
+        return torch.IntTensor(encoded_ids).unsqueeze(0)
+
     for token_list in train_data:
         n = len(token_list)
         if n >= max_length:
@@ -70,23 +79,24 @@ def get_iters(train_path, val_path, test_path, word2ix, embed_matrix, BATCH_SIZE
 
     # load and preprocess raw texts
     dp = DataPreprocessing(contract=True, lemmatize=False, lowercase=True, stopword=False, stopword_set=None)
-
-    train_texts, train_labels = load_n_preprocess(train_path, dp, label_dic, csv_format=True)
-    val_texts, val_labels = load_n_preprocess(val_path, dp, label_dic)
-    test_texts, test_labels = load_n_preprocess(test_path, dp, label_dic)
-
     # encode tokens into vector ids
-    train_inputs = encoding_tokens(train_data=train_texts, word2ix=word2ix, max_length=MAX_LENGTH)
-    train_dataset = Dataset(train_inputs, torch.LongTensor(train_labels))
-    train_iter = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+    train_iter, val_iter, test_iter = None, None, None
+    if train_path:
+        train_texts, train_labels = load_n_preprocess(train_path, dp, label_dic, csv_format=True)
+        train_inputs = encoding_tokens(train_data=train_texts, word2ix=word2ix, max_length=MAX_LENGTH)
+        train_dataset = Dataset(train_inputs, torch.LongTensor(train_labels))
+        train_iter = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
-    val_inputs = encoding_tokens(train_data=val_texts, word2ix=word2ix, max_length=MAX_LENGTH)
-    val_dataset = Dataset(val_inputs, torch.LongTensor(val_labels))
-    val_iter = torch.utils.data.DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True)
-
-    test_inputs = encoding_tokens(train_data=test_texts, word2ix=word2ix, max_length=MAX_LENGTH)
-    test_dataset = Dataset(test_inputs, torch.LongTensor(test_labels))
-    test_iter = torch.utils.data.DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+    if val_path:
+        val_texts, val_labels = load_n_preprocess(val_path, dp, label_dic)
+        val_inputs = encoding_tokens(train_data=val_texts, word2ix=word2ix, max_length=MAX_LENGTH)
+        val_dataset = Dataset(val_inputs, torch.LongTensor(val_labels))
+        val_iter = torch.utils.data.DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True)
+    if test_path:
+        test_texts, test_labels = load_n_preprocess(test_path, dp, label_dic)
+        test_inputs = encoding_tokens(train_data=test_texts, word2ix=word2ix, max_length=MAX_LENGTH)
+        test_dataset = Dataset(test_inputs, torch.LongTensor(test_labels))
+        test_iter = torch.utils.data.DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     # for batch in tqdm(train_iter):
     #     x, y = batch

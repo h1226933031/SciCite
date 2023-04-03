@@ -100,12 +100,12 @@ if __name__ == "__main__":
     parser.add_argument('--DROP_OUT', type=float, default=0.2, help='dropout rate only for RNN')
 
     # set training configs
-    parser.add_argument('--N_EPOCHS', type=int, default=1)
+    parser.add_argument('--N_EPOCHS', type=int, default=10)
     parser.add_argument('--BATCH_SIZE', type=int, default=128)
     parser.add_argument('--INITIAL_LR', type=float, default=0.005)
-    parser.add_argument('--EARLY_STOPPING_PATIENT', type=int, default=None, help="If None then not apply early stopping")
+    parser.add_argument('--EARLY_STOPPING_PATIENT', type=int, default=5, help="If None then not apply early stopping")
     parser.add_argument('--SAVE_BEST_MODEL', type=bool, default=True)
-    parser.add_argument('--lradj', type=str, default=None, help="options: [None, 'type1', 'type2', 'type3', 'type4']")
+    parser.add_argument('--lradj', type=str, default='type1', help="options: [None, 'type1', 'type2', 'type3', 'type4']")
     #
     args = parser.parse_args()
     print('Args in experiment:')
