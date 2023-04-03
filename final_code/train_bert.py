@@ -1,18 +1,13 @@
 import torch
 import torch.nn as nn
-from tqdm import tqdm
-from torchmetrics import F1Score, Accuracy
-from Bert.scibert_model.model import CustomBertClassifier
-from Bert.scibert_model.data_preprocessing import bert_process
+from final_code.Bert.model import CustomBertClassifier
+from final_code.Bert.data_preprocessing import bert_process
 import json
 import numpy as np
 import torch.optim as optim
 import time
-from Bert.scibert_model.utils import evaluate_bert, train_bert, adjust_learning_rate, epoch_time, categorical_accuracy
+from final_code.Bert.utils import evaluate_bert, train_bert, adjust_learning_rate, epoch_time
 import matplotlib.pyplot as plt
-from collections import defaultdict, Counter, OrderedDict
-import torch.nn.functional as F
-import math
 import logging
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "2"
